@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="cs">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Losování soutěže</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* VOICE: slavnostní, klidná, lesní noc – jako losování u krbu
+   IDEA: losovací buben / štítek s jménem, který se zastaví na výherci
+   PICTURE: velké okno bubnu uprostřed story, jména v něm sjíždějí
+   COLOUR and TYPE: hluboká lesní zeleň, písková, zlatý akcent; Cormorant Garamond + Inter
+   LAYOUT: jeden rámeček 9:16 přes celou výšku, nahoře titulek, uprostřed buben, dole soutěžící a tlačítko */
+:root{color-scheme:dark;--bg:#141c10;--deep:#1d2717;--card:#2c3a23;--ink:#faf7f1;--sand:#e6d8b8;--gold:#c0a060;--muted:rgba(230,216,184,.62)}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:16px/1.4 Inter,system-ui,sans-serif;overflow:hidden}
+.wrap{height:100dvh;display:grid;place-items:center}
+.stage{position:relative;container-type:size;width:min(100vw,56.25dvh);height:min(100dvh,177.78vw);overflow:hidden;
+  background:radial-gradient(120% 70% at 50% 0%,#3a4b2d 0%,var(--deep) 55%,#10170c 100%)}
+.frame{position:absolute;inset:2.4cqw;border:1px solid rgba(230,216,184,.35);pointer-events:none}
+.trees{position:absolute;left:0;right:0;bottom:0;width:100%;height:22cqh;opacity:.5}
+.in{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;padding:7cqh 7cqw 5cqh;text-align:center}
+.serif{font-family:"Cormorant Garamond",Georgia,serif}
+.pill{background:var(--gold);color:#1d2717;font-weight:600;font-size:2.7cqw;padding:1.2cqw 4cqw;border-radius:99px;letter-spacing:.06em}
+h1{font-family:"Cormorant Garamond",Georgia,serif;font-weight:600;font-size:11cqw;line-height:1;margin:3cqh 0 1cqh;text-wrap:balance}
+.sub{font-family:"Cormorant Garamond",Georgia,serif;font-style:italic;font-size:5cqw;color:var(--sand);margin:0}
+.count{margin-top:2cqh;font-size:3cqw;color:var(--muted)}
+.drum{position:relative;width:100%;height:21cqh;margin-top:3cqh;border-radius:2cqw;background:#0f150b;
+  box-shadow:inset 0 0 0 1px rgba(230,216,184,.25),inset 0 2cqh 4cqh rgba(0,0,0,.6),inset 0 -2cqh 4cqh rgba(0,0,0,.6);overflow:hidden}
+.drum::before{content:"";position:absolute;left:0;right:0;top:50%;height:7cqh;transform:translateY(-50%);
+  border-block:1px solid var(--gold);background:rgba(192,160,96,.12);z-index:1}
+.drum::after{content:"";position:absolute;inset:0;background:linear-gradient(#0f150b,transparent 30%,transparent 70%,#0f150b);z-index:2;pointer-events:none}
+.reel{position:absolute;left:0;right:0;top:0}
+.row{height:7cqh;display:flex;align-items:center;justify-content:center;gap:2cqw;font-size:5.6cqw;font-family:"Cormorant Garamond",Georgia,serif;font-weight:600;white-space:nowrap;padding:0 4cqw}
+.tag{font-family:Inter,sans-serif;font-size:2.3cqw;font-weight:600;padding:.4cqw 1.6cqw;border-radius:99px;background:rgba(230,216,184,.14);color:var(--sand)}
+.win{display:none;margin-top:3cqh}
+.win.show{display:block;animation:pop .6s ease-out}
+.win .lbl{font-size:3cqw;letter-spacing:.08em;color:var(--gold);font-weight:600}
+.win .who{font-family:"Cormorant Garamond",Georgia,serif;font-size:9cqw;font-weight:700;line-height:1.05;margin:1cqh 0;text-wrap:balance}
+.win .msg{font-size:3.2cqw;color:var(--sand)}
+@keyframes pop{from{transform:scale(.85);opacity:0}to{transform:none;opacity:1}}
+.people{display:flex;flex-wrap:wrap;justify-content:center;gap:1cqw;margin-top:3cqh;max-height:30cqh;overflow:hidden}
+.chip{display:inline-flex;align-items:center;gap:1cqw;font-size:2.15cqw;padding:.8cqw 1.8cqw;border-radius:99px;background:rgba(250,247,241,.08);border:1px solid rgba(230,216,184,.18);white-space:nowrap}
+.chip b{color:var(--gold);font-weight:600}
+.chip.won{background:var(--gold);color:#1d2717;border-color:var(--gold)}
+.chip.won b{color:#1d2717}
+.chip.off{opacity:.25;text-decoration:line-through}
+.go{margin-top:auto;font:600 4.4cqw Inter,sans-serif;color:#1d2717;background:var(--gold);border:0;border-radius:99px;padding:3cqw 12cqw;cursor:pointer;box-shadow:0 1.5cqh 3cqh rgba(0,0,0,.4)}
+.go:disabled{opacity:.5;cursor:default}
+.go:focus-visible,.tool:focus-visible{outline:3px solid var(--sand);outline-offset:3px}
+.foot{margin-top:2cqh;font-size:2.5cqw;color:var(--muted)}
+canvas{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:5}
+.tools{position:fixed;top:10px;right:10px;display:none;gap:8px;z-index:20}
+.tools.show{display:flex}
+.tool{font:500 13px Inter,sans-serif;color:var(--sand);background:rgba(20,28,16,.85);border:1px solid rgba(230,216,184,.3);border-radius:99px;padding:10px 14px;min-height:44px;cursor:pointer}
+.panel{position:fixed;inset:0;background:rgba(10,14,8,.94);z-index:30;display:none;overflow:auto;padding:24px 16px}
+.panel.show{display:block}
+.panel .box{max-width:560px;margin:0 auto}
+.panel h2{font:600 28px "Cormorant Garamond",serif;margin:0 0 6px}
+.panel p{color:var(--muted);font-size:14px;margin:0 0 16px}
+.panel label{display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid rgba(230,216,184,.12);font-size:16px;cursor:pointer}
+.panel input{width:22px;height:22px;accent-color:var(--gold)}
+.panel .n{margin-left:auto;color:var(--gold);font-size:14px;white-space:nowrap}
+@media (prefers-reduced-motion:reduce){.win.show{animation:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="stage" id="stage">
+    <div class="frame"></div>
+    <svg class="trees" viewBox="0 0 400 90" preserveAspectRatio="none" aria-hidden="true">
+      <defs><path id="t" d="M0 0 L-9 22 H-4 L-13 42 H-5 L-16 66 H16 L5 42 H13 L4 22 H9 Z"/></defs>
+      <g fill="#0c1209">
+        <use href="#t" x="20" y="24"/><use href="#t" x="52" y="10"/><use href="#t" x="84" y="30"/><use href="#t" x="118" y="16"/>
+        <use href="#t" x="282" y="18"/><use href="#t" x="314" y="6"/><use href="#t" x="346" y="26"/><use href="#t" x="378" y="12"/>
+      </g>
+      <rect y="86" width="400" height="4" fill="#0c1209"/>
+    </svg>
+    <div class="in">
+      <span class="pill">Soutěž · Apartmán Ostrůvek 206</span>
+      <h1>Losování výherce</h1>
+      <p class="sub">poukaz na 2 noci uprostřed Českého lesa</p>
+      <p class="count" id="count"></p>
+      <div class="drum"><div class="reel" id="reel"></div></div>
+      <div class="win" id="win">
+        <div class="lbl">Vyhrává</div>
+        <div class="who" id="who"></div>
+        <div class="msg">Gratulujeme! Ozveme se vám do zpráv.</div>
+      </div>
+      <div class="people" id="people"></div>
+      <button class="go" id="go" type="button">Losovat</button>
+      <p class="foot">@apartman_ostruvek206 · apartmanostruvek206.cz</p>
+    </div>
+    <canvas id="fx"></canvas>
+  </div>
+</div>
+<div class="tools"><button class="tool" id="edit" type="button">Upravit seznam</button></div>
+<div class="panel" id="panel"><div class="box">
+  <h2>Soutěžící</h2>
+  <p>Odškrtněte toho, kdo nesplnil podmínky. Na story se tento panel neukazuje.</p>
+  <div id="list"></div>
+  <p style="margin-top:18px"><button class="tool" id="close" type="button">Hotovo</button></p>
+</div></div>
+<script>
+{
+const P=[
+ {n:"@brokesovaadel",s:"IG",e:2},{n:"@dalibor_bystron",s:"IG",e:2},{n:"@veru_nka_bystronova",s:"IG",e:2},
+ {n:"@jeyna_rei27",s:"IG",e:1},{n:"@jir.vic",s:"IG",e:1},
+ {n:"Bystroňová Ver Ča",s:"FB",e:2},{n:"Sabina Pašavová",s:"FB",e:1},{n:"Monča Poláčková",s:"FB",e:1},
+ {n:"Blažena Krčmářová",s:"FB",e:1},{n:"Petra Jílkova",s:"FB",e:1},{n:"Petulinka Smíšek",s:"FB",e:1},
+ {n:"Anunnaki Télemachos",s:"FB",e:1},{n:"Smečka Kranátovi",s:"FB",e:1},{n:"Míša Hrbáčková",s:"FB",e:1},
+ {n:"Michaela Gajdorusová",s:"FB",e:1},{n:"Frida Nosálová",s:"FB",e:1},{n:"Adéla Čápová",s:"FB",e:1},
+ {n:"Renek Petruška Kranátovi",s:"FB",e:1},{n:"Jan Žemlička",s:"FB",e:1},{n:"Katerina Tomanova",s:"FB",e:1}
+];
+let off=new Set();
+try{off=new Set(JSON.parse(localStorage.getItem("los-off")||"[]"))}catch(_){}
+const $=id=>document.getElementById(id);
+const reel=$("reel"),go=$("go"),win=$("win"),people=$("people");
+let busy=false,winner=null;
+const active=()=>P.filter(p=>!off.has(p.n));
+const pool=()=>active().flatMap(p=>Array(p.e).fill(p));
+function rnd(n){const a=new Uint32Array(1),lim=Math.floor(4294967296/n)*n;let x;do{crypto.getRandomValues(a);x=a[0]}while(x>=lim);return x%n}
+const row=p=>`<div class="row"><span>${p.n}</span><span class="tag">${p.s==="IG"?"Instagram":"Facebook"}</span></div>`;
+function render(){
+  const a=active(),t=a.reduce((s,p)=>s+p.e,0);
+  $("count").textContent=`${t} losů · ${a.length} soutěžících · kdo sdílel, má 2 losy`;
+  people.innerHTML=P.map(p=>`<span class="chip${off.has(p.n)?" off":""}${winner&&winner.n===p.n?" won":""}">${p.n}${p.e>1?` <b>×${p.e}</b>`:""}</span>`).join("");
+  if(!busy&&!winner){const b=pool();reel.style.transition="none";reel.style.transform="translateY(7cqh)";reel.innerHTML=row(b[rnd(b.length)])}
+  $("list").innerHTML=P.map((p,i)=>`<label><input type="checkbox" data-i="${i}"${off.has(p.n)?"":" checked"}> ${p.n} <span class="n">${p.s} · ${p.e} ${p.e>1?"losy":"los"}</span></label>`).join("");
+  go.textContent=winner?"Losovat znovu":"Losovat";
+}
+function spin(){
+  const b=pool();if(!b.length||busy)return;
+  busy=true;go.disabled=true;win.classList.remove("show");winner=null;render();
+  const w=b[rnd(b.length)],N=46,items=[];
+  for(let i=0;i<N;i++)items.push(b[rnd(b.length)]);
+  items.push(w,b[rnd(b.length)],b[rnd(b.length)]);
+  reel.innerHTML=items.map(row).join("");
+  reel.style.transition="none";reel.style.transform="translateY(7cqh)";
+  void reel.offsetHeight;
+  const dur=matchMedia("(prefers-reduced-motion: reduce)").matches?1200:7000;
+  reel.style.transition=`transform ${dur}ms cubic-bezier(.08,.55,.08,1)`;
+  reel.style.transform=`translateY(calc(7cqh - ${N}*7cqh))`;
+  setTimeout(()=>{winner=w;busy=false;go.disabled=false;$("who").textContent=w.n;win.classList.add("show");render();confetti()},dur+200);
+}
+function confetti(){
+  const c=$("fx"),x=c.getContext("2d"),r=c.getBoundingClientRect();
+  c.width=r.width*devicePixelRatio;c.height=r.height*devicePixelRatio;x.scale(devicePixelRatio,devicePixelRatio);
+  const col=["#c0a060","#e6d8b8","#faf7f1","#7f9668"],ps=Array.from({length:140},()=>({x:r.width/2,y:r.height*.42,vx:(Math.random()-.5)*14,vy:-Math.random()*13-3,s:Math.random()*6+3,c:col[Math.floor(Math.random()*4)],a:Math.random()*6}));
+  let f=0;(function tick(){x.clearRect(0,0,r.width,r.height);ps.forEach(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=.35;p.vx*=.99;p.a+=.2;x.save();x.translate(p.x,p.y);x.rotate(p.a);x.fillStyle=p.c;x.fillRect(-p.s/2,-p.s/4,p.s,p.s/2);x.restore()});if(++f<170)requestAnimationFrame(tick);else x.clearRect(0,0,r.width,r.height)})();
+}
+go.addEventListener("click",spin);
+const showTools=()=>document.querySelector(".tools").classList.toggle("show",location.hash==="#upravit");
+addEventListener("hashchange",showTools);showTools();
+$("edit").addEventListener("click",()=>$("panel").classList.add("show"));
+$("close").addEventListener("click",()=>$("panel").classList.remove("show"));
+$("list").addEventListener("change",e=>{const p=P[e.target.dataset.i];if(!p)return;e.target.checked?off.delete(p.n):off.add(p.n);try{localStorage.setItem("los-off",JSON.stringify([...off]))}catch(_){}winner=null;win.classList.remove("show");render()});
+render();
+}
+</script>
+</body>
+</html>
